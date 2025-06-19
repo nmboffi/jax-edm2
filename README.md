@@ -52,7 +52,7 @@ params = edm2_net.project_to_sphere(params)
 The EDM2 network architecture relies on careful normalization and projection of the model's covolutional weights. In PyTorch, this can happen in the network itself. Because ``jax`` is functional, this will need to happen in the training loop. As shown in the above code snippet, we've included a function ``project_to_sphere`` that accomplishes this projection for you. Just apply it after every gradient step.
 
 # References
-The following references were useful in the development of this code. The first is the original paper by NVidia introducing the network architecture. The second is a paper by your's truly that leverages this code for learning flow map-based generative models.
+The following references were useful in the development of this code. The first is the original paper by NVidia introducing the network architecture. The second is a paper by your's truly (along with the great & powerful Michael Albergo and Eric Vanden-Eijnden) that leverages this code for learning flow map-based generative models.
 
 ```bibtex
 @article{karras_analyzing_2024,
