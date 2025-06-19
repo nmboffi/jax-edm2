@@ -8,7 +8,7 @@ To help with all of that, this repository contains an implementation of NVIDIA's
 
 As described in ``example.py``, usage of the network is simple:
 
-```
+```python
 ## initialize the model
 model = edm2_net.PrecondUNet(
     img_resolution=32,
@@ -52,3 +52,25 @@ params = edm2_net.project_to_sphere(params)
 The EDM2 network architecture relies on careful normalization and projection of the model's covolutional weights. In PyTorch, this can happen in the network itself. Because ``jax`` is functional, this will need to happen in the training loop. As shown in the above code snippet, we've included a function ``project_to_sphere`` that accomplishes this projection for you. Just apply it after every gradient step.
 
 # References
+The following references were useful in the development of this code. The first is the original paper by NVidia introducing the network architecture. The second is a paper by your's truly that leverages this code for learning flow map-based generative models.
+
+```bibtex
+@article{karras_analyzing_2024,
+	title = {Analyzing and {Improving} the {Training} {Dynamics} of {Diffusion} {Models}},
+	url = {http://arxiv.org/abs/2312.02696},
+	author = {Karras, Tero and Aittala, Miika and Lehtinen, Jaakko and Hellsten, Janne and Aila, Timo and Laine, Samuli},
+	month = mar,
+	year = {2024},
+	journal = {arXiv:2312.02696},
+}
+
+
+@article{boffi_how_2025,
+	title = {How to build a consistency model: {Learning} flow maps via self-distillation},
+	shorttitle = {How to build a consistency model},
+	author = {Boffi, Nicholas M. and Albergo, Michael S. and Vanden-Eijnden, Eric},
+	month = may,
+	year = {2025},
+	journal = {arXiv:2505.18825},
+}
+```
