@@ -68,7 +68,7 @@ The following references were useful in the development of this code. The first 
 @article{boffi_how_2025,
 	title = {How to build a consistency model: {Learning} flow maps via self-distillation},
 	shorttitle = {How to build a consistency model},
-    url = {https://www.arxiv.org/abs/2505.18825}
+	url = {https://www.arxiv.org/abs/2505.18825},
 	author = {Boffi, Nicholas M. and Albergo, Michael S. and Vanden-Eijnden, Eric},
 	month = may,
 	year = {2025},
