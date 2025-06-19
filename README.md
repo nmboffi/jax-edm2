@@ -49,6 +49,6 @@ print(f"Number of parameters: {ravel_pytree(params)[0].size}")
 params = edm2_net.project_to_sphere(params)
 ```
 
-The EDM2 network architecture relies on careful normalization and projection of the weights. In PyTorch, this can happen in the network itself. Because ``jax`` is functional, this will need to happen in the training loop. As shown in the above code snippet, we've included a function ``project_to_sphere`` that accomplishes this projection for you. Just apply it after every gradient step.
+The EDM2 network architecture relies on careful normalization and projection of the model's covolutional weights. In PyTorch, this can happen in the network itself. Because ``jax`` is functional, this will need to happen in the training loop. As shown in the above code snippet, we've included a function ``project_to_sphere`` that accomplishes this projection for you. Just apply it after every gradient step.
 
 # References
