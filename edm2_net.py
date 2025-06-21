@@ -343,6 +343,7 @@ class EDM2UNet(nn.Module):
     label_balance: float = 0.5  # Balance between noise and class embedding
     concat_balance: float = 0.5  # Balance between skip connections and main path
     use_fourier: bool = False  # Use Fourier positional embeddings
+    fourier_bandwidth: float = 1.0  # Bandwidth for Fourier embeddings
     block_kwargs: dict = field(default_factory=dict)  # Arguments for Block
 
     def setup(self):
@@ -366,7 +367,9 @@ class EDM2UNet(nn.Module):
 
         # Embedding layers
         if self.use_fourier:
-            self.emb_t_fourier = MPFourierEmbedding(cst)
+            self.emb_t_fourier = MPFourierEmbedding(
+                cst, bandwidth=self.fourier_bandwidth
+            )
         else:
             self.emb_t_fourier = MPPositionalEmbedding(cst)
         self.emb_t_linear = MPConv(cst, cemb, kernel=())
@@ -510,7 +513,9 @@ class PrecondUNet(nn.Module):
 
         # uncertainty estimation layers
         if self.unet_kwargs["use_fourier"]:
-            self.logvar_fourier_t = MPFourierEmbedding(self.logvar_channels)
+            self.logvar_fourier_t = MPFourierEmbedding(
+                self.logvar_channels, bandwidth=self.unet_kwargs["fourier_bandwidth"]
+            )
 
         else:
             self.logvar_fourier_t = MPPositionalEmbedding(self.logvar_channels)
