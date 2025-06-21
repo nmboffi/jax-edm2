@@ -32,19 +32,21 @@ def project_to_sphere(params: dict):
     return flax.traverse_util.unflatten_dict(projected)
 
 
-def project_weight_to_sphere(key: str, val: np.ndarray):
+def project_weight_to_sphere(key: str, val: jnp.ndarray):
     """Project weight to sphere only if it is an MPConv weight."""
     return jax.lax.cond(
         "mpconv_weight" in key, lambda _: normalize(val), lambda _: val, None
     )
 
 
-def multi_axis_norm(x: jnp.ndarray, axis: tuple[int] = (1, 2, 3)):
+def multi_axis_norm(x: jnp.ndarray, axis: tuple[int, ...] | int = (1, 2, 3)):
     """Compute the norm of a tensor over multiple axes."""
     return jnp.sqrt(jnp.sum(x.astype(jnp.float32) ** 2, axis=axis, keepdims=True))
 
 
-def normalize(x: jnp.ndarray, dim: tuple = None, eps: float = 1e-4):
+def normalize(
+    x: jnp.ndarray, dim: tuple[int, ...] | int | None = None, eps: float = 1e-4
+):
     """Normalize tensor to unit magnitude with respect to given dimensions."""
     if dim is None:
         dim = tuple(np.arange(1, x.ndim))
@@ -62,7 +64,7 @@ def normalize(x: jnp.ndarray, dim: tuple = None, eps: float = 1e-4):
     return x / norm.astype(x.dtype)
 
 
-def resample(x: jnp.ndarray, f: list = [1, 1], mode: str = "keep"):
+def resample(x: jnp.ndarray, f: jnp.ndarray | list[int] = [1, 1], mode: str = "keep"):
     """Upsample or downsample tensor with given filter."""
     if mode == "keep":
         return x
@@ -203,7 +205,7 @@ class MPConv(nn.Module):
 
         self.weight = self.param("mpconv_weight", jax.random.normal, self.kernel_shape)
 
-    def __call__(self, x, gain=1):
+    def __call__(self, x, gain: jnp.ndarray | float = 1):
         w = self.weight.astype(jnp.float32)
         w = normalize(w)
         w_size = np.prod(w.shape[1:])
@@ -525,14 +527,16 @@ class PrecondUNet(nn.Module):
 
     def process_input(
         self, ts: jnp.ndarray, xs: jnp.ndarray
-    ) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
         """Process inputs for the model."""
         ts = ts.astype(jnp.float32).reshape(-1, 1, 1, 1)
         xs = xs.astype(jnp.float32)
 
         return ts, xs
 
-    def process_label(self, class_labels: jnp.ndarray) -> Optional[jnp.ndarray]:
+    def process_label(
+        self, class_labels: Optional[jnp.ndarray]
+    ) -> Optional[jnp.ndarray]:
         """Process class labels for the model."""
         if self.label_dim == 0 or class_labels is None:
             return None
@@ -543,10 +547,10 @@ class PrecondUNet(nn.Module):
         self,
         ts: jnp.ndarray,
         xs: jnp.ndarray,
-        class_labels: jnp.ndarray = None,
+        class_labels: Optional[jnp.ndarray] = None,
         train: bool = False,
         calc_weight: bool = False,
-    ) -> jnp.ndarray:
+    ) -> jnp.ndarray | tuple[jnp.ndarray, jnp.ndarray]:
         dtype = jnp.bfloat16 if self.use_bfloat16 else jnp.float32
         ts, xs = self.process_input(ts, xs)
         class_labels = self.process_label(class_labels)
