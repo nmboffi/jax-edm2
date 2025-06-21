@@ -7,7 +7,7 @@ Jax port of the EDM2 UNet architecture with positional embeddings.
 
 import functools
 from dataclasses import field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import flax
 import flax.linen as nn
@@ -15,7 +15,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-Parameters = Dict[str, Dict]
+Parameters = dict[str, dict]
 
 
 @functools.partial(jax.pmap, axis_name="data")
@@ -39,12 +39,12 @@ def project_weight_to_sphere(key: str, val: np.ndarray):
     )
 
 
-def multi_axis_norm(x: jnp.ndarray, axis: Tuple[int] = (1, 2, 3)):
+def multi_axis_norm(x: jnp.ndarray, axis: tuple[int] = (1, 2, 3)):
     """Compute the norm of a tensor over multiple axes."""
     return jnp.sqrt(jnp.sum(x.astype(jnp.float32) ** 2, axis=axis, keepdims=True))
 
 
-def normalize(x: jnp.ndarray, dim: Tuple = None, eps: float = 1e-4):
+def normalize(x: jnp.ndarray, dim: tuple = None, eps: float = 1e-4):
     """Normalize tensor to unit magnitude with respect to given dimensions."""
     if dim is None:
         dim = tuple(np.arange(1, x.ndim))
@@ -62,7 +62,7 @@ def normalize(x: jnp.ndarray, dim: Tuple = None, eps: float = 1e-4):
     return x / norm.astype(x.dtype)
 
 
-def resample(x: jnp.ndarray, f: List = [1, 1], mode: str = "keep"):
+def resample(x: jnp.ndarray, f: list = [1, 1], mode: str = "keep"):
     """Upsample or downsample tensor with given filter."""
     if mode == "keep":
         return x
@@ -235,7 +235,7 @@ class Block(nn.Module):
     emb_channels: int  # Number of embedding channels
     flavor: str = "enc"  # Flavor: 'enc' or 'dec'
     resample_mode: str = "keep"  # Resampling: 'keep', 'up', or 'down'
-    resample_filter: List[int] = field(
+    resample_filter: list[int] = field(
         default_factory=lambda: [1, 1]
     )  # Resampling filter
     attention: bool = False  # Include self-attention?
@@ -331,13 +331,13 @@ class EDM2UNet(nn.Module):
     img_channels: int  # Image channels
     label_dim: int  # Class label dimensionality. 0 = unconditional
     model_channels: int = 192  # Base multiplier for the number of channels
-    channel_mult: List[int] = field(
+    channel_mult: list[int] = field(
         default_factory=lambda: [1, 2, 3, 4]
     )  # Channel multipliers
     channel_mult_noise: Optional[int] = None  # Noise embedding multiplier
     channel_mult_emb: Optional[int] = None  # Final embedding multiplier
     num_blocks: int = 3  # Number of residual blocks per resolution
-    attn_resolutions: List[int] = field(
+    attn_resolutions: list[int] = field(
         default_factory=lambda: [16, 8]
     )  # Resolutions with attention
     label_balance: float = 0.5  # Balance between noise and class embedding
@@ -525,7 +525,7 @@ class PrecondUNet(nn.Module):
 
     def process_input(
         self, ts: jnp.ndarray, xs: jnp.ndarray
-    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    ) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
         """Process inputs for the model."""
         ts = ts.astype(jnp.float32).reshape(-1, 1, 1, 1)
         xs = xs.astype(jnp.float32)
