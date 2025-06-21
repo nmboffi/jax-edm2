@@ -153,7 +153,7 @@ class MPFourierEmbedding(nn.Module):
 
     def __call__(self, t: jnp.ndarray) -> jnp.ndarray:
         t = t.astype(jnp.float32)
-        t_flat = jnp.reshape(t, (t.shape[0],))
+        t_flat = t.ravel()
         angles = t_flat[:, None] * self.freqs.value + self.phases.value  # (B, dim)
         emb = jnp.cos(angles) * jnp.sqrt(2.0)  # variance-preserving
         return emb.astype(t.dtype)  # (B, dim)
