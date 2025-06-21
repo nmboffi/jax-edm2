@@ -9,11 +9,11 @@ import functools
 from dataclasses import field
 from typing import Any, Optional
 
-import flax
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flax import traverse_util
 
 Parameters = dict[str, dict]
 
@@ -27,9 +27,9 @@ def pmap_project_to_sphere(params: dict):
 @jax.jit
 def project_to_sphere(params: dict):
     """Project parameter dictionary to sphere."""
-    flat = flax.traverse_util.flatten_dict(params)
+    flat = traverse_util.flatten_dict(params)
     projected = {k: project_weight_to_sphere(k, v) for k, v in flat.items()}
-    return flax.traverse_util.unflatten_dict(projected)
+    return traverse_util.unflatten_dict(projected)
 
 
 def project_weight_to_sphere(key: str, val: jnp.ndarray):
