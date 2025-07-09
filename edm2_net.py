@@ -7,15 +7,15 @@ Jax port of the EDM2 UNet architecture with positional embeddings.
 
 import functools
 from dataclasses import field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
-import flax
 import flax.linen as nn
 import jax
 import jax.numpy as jnp
 import numpy as np
+from flax import traverse_util
 
-Parameters = Dict[str, Dict]
+Parameters = dict[str, dict]
 
 
 @functools.partial(jax.pmap, axis_name="data")
@@ -27,24 +27,26 @@ def pmap_project_to_sphere(params: dict):
 @jax.jit
 def project_to_sphere(params: dict):
     """Project parameter dictionary to sphere."""
-    flat = flax.traverse_util.flatten_dict(params)
+    flat = traverse_util.flatten_dict(params)
     projected = {k: project_weight_to_sphere(k, v) for k, v in flat.items()}
-    return flax.traverse_util.unflatten_dict(projected)
+    return traverse_util.unflatten_dict(projected)
 
 
-def project_weight_to_sphere(key: str, val: np.ndarray):
+def project_weight_to_sphere(key: str, val: jnp.ndarray):
     """Project weight to sphere only if it is an MPConv weight."""
     return jax.lax.cond(
         "mpconv_weight" in key, lambda _: normalize(val), lambda _: val, None
     )
 
 
-def multi_axis_norm(x: jnp.ndarray, axis: Tuple[int] = (1, 2, 3)):
+def multi_axis_norm(x: jnp.ndarray, axis: tuple[int, ...] | int = (1, 2, 3)):
     """Compute the norm of a tensor over multiple axes."""
     return jnp.sqrt(jnp.sum(x.astype(jnp.float32) ** 2, axis=axis, keepdims=True))
 
 
-def normalize(x: jnp.ndarray, dim: Tuple = None, eps: float = 1e-4):
+def normalize(
+    x: jnp.ndarray, dim: tuple[int, ...] | int | None = None, eps: float = 1e-4
+):
     """Normalize tensor to unit magnitude with respect to given dimensions."""
     if dim is None:
         dim = tuple(np.arange(1, x.ndim))
@@ -62,7 +64,7 @@ def normalize(x: jnp.ndarray, dim: Tuple = None, eps: float = 1e-4):
     return x / norm.astype(x.dtype)
 
 
-def resample(x: jnp.ndarray, f: List = [1, 1], mode: str = "keep"):
+def resample(x: jnp.ndarray, f: jnp.ndarray | list[int] = [1, 1], mode: str = "keep"):
     """Upsample or downsample tensor with given filter."""
     if mode == "keep":
         return x
@@ -203,7 +205,7 @@ class MPConv(nn.Module):
 
         self.weight = self.param("mpconv_weight", jax.random.normal, self.kernel_shape)
 
-    def __call__(self, x, gain=1):
+    def __call__(self, x, gain: jnp.ndarray | float = 1):
         w = self.weight.astype(jnp.float32)
         w = normalize(w)
         w_size = np.prod(w.shape[1:])
@@ -235,7 +237,7 @@ class Block(nn.Module):
     emb_channels: int  # Number of embedding channels
     flavor: str = "enc"  # Flavor: 'enc' or 'dec'
     resample_mode: str = "keep"  # Resampling: 'keep', 'up', or 'down'
-    resample_filter: List[int] = field(
+    resample_filter: list[int] = field(
         default_factory=lambda: [1, 1]
     )  # Resampling filter
     attention: bool = False  # Include self-attention?
@@ -331,13 +333,13 @@ class EDM2UNet(nn.Module):
     img_channels: int  # Image channels
     label_dim: int  # Class label dimensionality. 0 = unconditional
     model_channels: int = 192  # Base multiplier for the number of channels
-    channel_mult: List[int] = field(
+    channel_mult: list[int] = field(
         default_factory=lambda: [1, 2, 3, 4]
     )  # Channel multipliers
     channel_mult_noise: Optional[int] = None  # Noise embedding multiplier
     channel_mult_emb: Optional[int] = None  # Final embedding multiplier
     num_blocks: int = 3  # Number of residual blocks per resolution
-    attn_resolutions: List[int] = field(
+    attn_resolutions: list[int] = field(
         default_factory=lambda: [16, 8]
     )  # Resolutions with attention
     label_balance: float = 0.5  # Balance between noise and class embedding
@@ -525,14 +527,16 @@ class PrecondUNet(nn.Module):
 
     def process_input(
         self, ts: jnp.ndarray, xs: jnp.ndarray
-    ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:
         """Process inputs for the model."""
         ts = ts.astype(jnp.float32).reshape(-1, 1, 1, 1)
         xs = xs.astype(jnp.float32)
 
         return ts, xs
 
-    def process_label(self, class_labels: jnp.ndarray) -> Optional[jnp.ndarray]:
+    def process_label(
+        self, class_labels: Optional[jnp.ndarray]
+    ) -> Optional[jnp.ndarray]:
         """Process class labels for the model."""
         if self.label_dim == 0 or class_labels is None:
             return None
@@ -543,10 +547,10 @@ class PrecondUNet(nn.Module):
         self,
         ts: jnp.ndarray,
         xs: jnp.ndarray,
-        class_labels: jnp.ndarray = None,
+        class_labels: Optional[jnp.ndarray] = None,
         train: bool = False,
         calc_weight: bool = False,
-    ) -> jnp.ndarray:
+    ) -> jnp.ndarray | tuple[jnp.ndarray, jnp.ndarray]:
         dtype = jnp.bfloat16 if self.use_bfloat16 else jnp.float32
         ts, xs = self.process_input(ts, xs)
         class_labels = self.process_label(class_labels)
