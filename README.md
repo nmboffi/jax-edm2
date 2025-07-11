@@ -1,6 +1,6 @@
-# jax-edm2
-
 ![Network diagram](imgs/net_diagram.png)
+
+# jax-edm2
 
 Love ``jax``? Tired of not having good networks pre-implemented and the infrastructure being less robust than PyTorch? Bummed that HuggingFace Diffusers just let go of Flax?
 
